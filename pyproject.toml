@@ -1,6 +1,6 @@
 [project]
 name = "up-and-run-tts"
-version = "0.0.0"
+version = "0.1.0"
 description = "Local Russian text-to-speech service (Silero, CPU-only) with an OpenAI-compatible API and an admin page"
 readme = "README.md"
 requires-python = ">=3.12"

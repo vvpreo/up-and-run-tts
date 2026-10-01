@@ -1,0 +1,189 @@
+<!doctype html>
+<html lang="ru">
+<head>
+<meta charset="utf-8">
+<meta name="viewport" content="width=device-width,initial-scale=1">
+<title>up-and-run-tts</title>
+<link rel="icon" href="/favicon.svg" type="image/svg+xml">
+<style>
+:root{--bg:#f6f6f3;--fg:#1c1c1a;--mut:#6b6b66;--line:#d9d9d2;--card:#fff;--acc:#7a4ea3;--good:#2e7d32;--bad:#b3261e;--warn:#9a6700}
+@media(prefers-color-scheme:dark){:root{--bg:#161614;--fg:#e8e8e3;--mut:#9a9a93;--line:#33332f;--card:#1f1f1c;--acc:#b58ee0;--good:#81c784;--bad:#ef9a9a;--warn:#e3b341}}
+*{box-sizing:border-box}body{margin:0;background:var(--bg);color:var(--fg);font:15px/1.5 system-ui,sans-serif}
+main{max-width:1000px;margin:0 auto;padding:16px}h1{font-size:22px;margin:4px 0 12px;display:flex;align-items:center;gap:10px}
+h1 img{width:28px;height:28px}h2{font-size:17px;margin:20px 0 8px}.mut{color:var(--mut);font-size:13px}
+nav.tabs{display:flex;flex-wrap:wrap;gap:4px;border-bottom:1px solid var(--line);margin-bottom:14px}
+nav.tabs button{background:none;border:none;border-bottom:2px solid transparent;padding:8px 12px;color:var(--mut);cursor:pointer;font:inherit}
+nav.tabs button.on{color:var(--fg);border-bottom-color:var(--acc)}section{display:none}section.on{display:block}
+.card{background:var(--card);border:1px solid var(--line);border-radius:8px;padding:12px 14px;margin:10px 0}
+label{display:block;margin:8px 0 2px;font-size:13px;color:var(--mut)}
+input[type=text],input[type=number],select,textarea{width:100%;padding:7px 9px;border:1px solid var(--line);border-radius:6px;background:var(--bg);color:var(--fg);font:inherit}
+textarea{min-height:110px}.row{display:grid;grid-template-columns:repeat(auto-fit,minmax(180px,1fr));gap:10px}
+button.btn{padding:7px 14px;border:1px solid var(--acc);background:var(--acc);color:#fff;border-radius:6px;cursor:pointer;font:inherit}
+button.btn.sec{background:none;color:var(--acc)}button.btn.danger{border-color:var(--bad);background:none;color:var(--bad)}
+button.btn:disabled{opacity:.5;cursor:default}table{border-collapse:collapse;width:100%}th,td{padding:6px 8px;border-bottom:1px solid var(--line);text-align:left;font-size:14px;vertical-align:middle}
+th{color:var(--mut);font-weight:600;font-size:12px}.ok{color:var(--good)}.bad{color:var(--bad)}.warn{color:var(--warn)}
+.tag{display:inline-block;font-size:11px;padding:1px 6px;border:1px solid var(--line);border-radius:10px;color:var(--mut);margin-left:4px}
+#toast{position:fixed;bottom:16px;left:50%;transform:translateX(-50%);background:var(--fg);color:var(--bg);padding:8px 14px;border-radius:8px;opacity:0;transition:opacity .2s;pointer-events:none;max-width:90vw}
+#toast.show{opacity:1}code{background:var(--bg);padding:1px 4px;border-radius:4px;font-size:13px}
+.prepared{white-space:pre-wrap;font-family:ui-monospace,monospace;font-size:13px;background:var(--bg);padding:8px;border-radius:6px;margin-top:8px}
+audio{width:100%;margin-top:8px}.chk{display:flex;align-items:center;gap:8px;margin:6px 0;font-size:14px}.chk input{width:auto}
+.vgrid{display:grid;grid-template-columns:repeat(auto-fill,minmax(210px,1fr));gap:6px 12px;margin:6px 0 10px}
+.voice{display:flex;align-items:center;gap:8px;padding:4px 6px;border:1px solid var(--line);border-radius:6px;background:var(--bg)}
+.voice.off{opacity:.5}.voice .nm{flex:1;overflow:hidden;text-overflow:ellipsis;white-space:nowrap}.voice input{width:auto;margin:0}
+button.play{width:30px;height:30px;border-radius:50%;border:1px solid var(--acc);background:none;color:var(--acc);cursor:pointer;font-size:13px;flex:none}
+button.play.on{background:var(--acc);color:#fff}button.play.busy{opacity:.5}
+.mcard h2{display:flex;align-items:center;gap:8px;flex-wrap:wrap;margin-top:4px}.mcard .notes{margin:0 0 8px}
+.actions{display:flex;flex-wrap:wrap;gap:8px;margin-top:10px;align-items:center}
+</style>
+</head>
+<body><main>
+<h1><img src="/favicon.svg" alt="">up-and-run-tts <span class="mut" id="envtag"></span></h1>
+<nav class="tabs">
+ <button data-t="settings" class="on">Настройки</button><button data-t="voices">Голоса и модели</button><button data-t="dict">Словарь</button>
+ <button data-t="test">Тест</button><button data-t="keys">Ключи</button><button data-t="api">API</button>
+</nav>
+
+<section id="settings" class="on">
+ <div class="card">
+  <h2>По умолчанию</h2>
+  <p class="mut">Эти значения используются, когда клиент прислал <code>model: tts-1</code> и не указал голос, частоту или темп.</p>
+  <div class="row">
+   <div><label>Модель</label><select id="d_model"></select></div>
+   <div><label>Голос</label><select id="d_voice"></select></div>
+   <div><label>Частота, Гц</label><select id="d_sr"><option>8000</option><option>24000</option><option>48000</option></select></div>
+   <div><label>Темп (SSML rate)</label><select id="d_rate"><option>x-slow</option><option>slow</option><option>medium</option><option>fast</option><option>x-fast</option></select></div>
+   <div><label>Высота (SSML pitch)</label><select id="d_pitch"><option>x-low</option><option>low</option><option>medium</option><option>high</option><option>x-high</option></select></div>
+   <div><label>Сила логического ударения (*слово), 1–5</label><input type="number" id="d_int" min="1" max="5"></div>
+  </div>
+  <div class="chk"><input type="checkbox" id="d_yo"><label for="d_yo" style="margin:0">Восстанавливать «ё»</label></div>
+  <div class="actions"><button class="btn" id="save_defaults">Сохранить</button></div>
+ </div>
+ <div class="card">
+  <h2>Обработка текста</h2>
+  <div class="chk"><input type="checkbox" id="t_md"><label for="t_md" style="margin:0">Убирать markdown, код, ссылки и эмодзи</label></div>
+  <div class="chk"><input type="checkbox" id="t_num"><label for="t_num" style="margin:0">Числа, даты, время, деньги и единицы — словами</label></div>
+  <div class="chk"><input type="checkbox" id="t_lat"><label for="t_lat" style="margin:0">Латиницу читать по правилам (словарь — приоритетнее)</label></div>
+  <div class="chk"><input type="checkbox" id="t_stress"><label for="t_stress" style="margin:0">Расставлять ударения пакетом silero-stress (для моделей без встроенных ударений)</label></div>
+  <label>Не резать по запятым фрагменты короче, символов</label><input type="number" id="t_min" min="0" max="500" style="max-width:160px">
+  <div class="actions"><button class="btn" id="save_text">Сохранить</button></div>
+ </div>
+</section>
+
+<section id="voices">
+ <div class="card">
+  <p class="mut">Модель включается и выключается целиком; выключение выгружает её из памяти, веса остаются на томе. Некоммерческие модели выключены, пока вы не включите их сами. Внутри модели можно выключить отдельные голоса — они пропадут из <code>/v1/voices</code>, а запрос с таким голосом получит 403.</p>
+  <label>Фраза для прослушивания</label><input type="text" id="v_text" value="Здравствуйте! Я голосовой помощник. Чем могу помочь сегодня?">
+  <p class="mut">Кнопка ▶ озвучивает фразу этим голосом; запуск другого голоса останавливает текущий.</p>
+ </div>
+ <div id="voices_list"></div>
+ <div class="card"><h2>Статистика</h2><div id="stats" class="mut"></div></div>
+</section>
+
+<section id="dict">
+ <div class="card">
+  <h2>Словарь произношений</h2>
+  <p class="mut">Слово → как произносить. Сравнение без регистра. Ударение — знак <code>+</code> перед ударной гласной: <code>мука → мук+а</code>. Латиницу можно задать кириллицей: <code>Docker → д+окер</code>. Встроенный список терминов (API, GitHub, Python…) применяется, если слова нет здесь. Клиент может прислать свой словарь в запросе (поле <code>dictionary</code>) — он дописывает и перекрывает этот.</p>
+  <table><thead><tr><th>Слово</th><th>Произношение</th><th></th></tr></thead><tbody id="dict_rows"></tbody></table>
+  <div class="actions">
+   <input type="text" id="dict_k" placeholder="слово" style="max-width:220px"><input type="text" id="dict_v" placeholder="произношение" style="max-width:260px">
+   <button class="btn sec" id="dict_add">Добавить</button><button class="btn" id="dict_save">Сохранить словарь</button>
+  </div>
+ </div>
+</section>
+
+<section id="test">
+ <div class="card">
+  <h2>Тест синтеза</h2>
+  <label>Текст (можно SSML, начиная с &lt;speak&gt;; <code>+</code> — ударение, <code>*слово</code> — логическое ударение у ru-моделей)</label>
+  <textarea id="s_text">Встреча назначена на 12.05.2026 в 14:30. Бюджет — 1 250 000 руб., это на 3,5% больше, чем в прошлом году. Установите Docker и откройте README.</textarea>
+  <div class="row">
+   <div><label>Модель</label><select id="s_model"><option value="">по умолчанию</option></select></div>
+   <div><label>Голос</label><select id="s_voice"><option value="">по умолчанию</option></select></div>
+   <div><label>Частота</label><select id="s_sr"><option value="">по умолчанию</option><option>8000</option><option>24000</option><option>48000</option></select></div>
+   <div><label>Темп</label><select id="s_rate"><option value="">по умолчанию</option><option>x-slow</option><option>slow</option><option>medium</option><option>fast</option><option>x-fast</option></select></div>
+   <div><label>Высота</label><select id="s_pitch"><option value="">по умолчанию</option><option>x-low</option><option>low</option><option>medium</option><option>high</option><option>x-high</option></select></div>
+  </div>
+  <div class="actions"><button class="btn" id="s_speak">Озвучить</button><button class="btn sec" id="s_prepare">Показать обработанный текст</button><span class="mut" id="s_info"></span></div>
+  <div class="prepared" id="s_prepared" style="display:none"></div>
+  <audio id="s_audio" controls style="display:none"></audio>
+ </div>
+</section>
+
+<section id="keys">
+ <div class="card">
+  <h2>Ключи API</h2>
+  <p class="mut" id="keys_note"></p>
+  <table><thead><tr><th>Название</th><th>Ключ</th><th>Создан</th><th></th></tr></thead><tbody id="keys_rows"></tbody></table>
+  <div class="actions"><input type="text" id="key_name" placeholder="название (кто пользуется)" style="max-width:280px"><button class="btn" id="key_add">Создать ключ</button></div>
+  <div id="key_new" class="prepared" style="display:none"></div>
+ </div>
+</section>
+
+<section id="api">
+ <div class="card">
+  <h2>Как вызывать</h2>
+  <p>OpenAI-совместимый синтез. Поля сверх OpenAI: <code>stream</code>, <code>sample_rate</code> (8000 / 24000 / 48000), <code>rate</code>, <code>pitch</code>, <code>intensity</code>, <code>dictionary</code> (словарь произношений на один запрос: <code>{"мука":"мук+а"}</code>). <code>model: tts-1</code> и пустой <code>voice</code> — значения по умолчанию из настроек. Вход, начинающийся с <code>&lt;speak&gt;</code>, уходит в Silero как SSML без обработки.</p>
+  <div class="prepared" id="api_curl"></div>
+  <p>Форматы: <code>wav</code> и <code>pcm</code> (16 бит, моно) отдаются потоково по фразам; <code>mp3</code> — потоково по фразам; <code>opus</code> и <code>flac</code> — одним файлом.</p>
+  <p>Текст по кускам: WebSocket <code>/v1/audio/speech/stream</code> — JSON <code>input.text</code> / <code>input.done</code> / <code>input.cancel</code>, в ответ <code>audio.start</code> → бинарный PCM16 → <code>audio.done</code>. Список голосов: <code>GET /v1/voices</code>, моделей: <code>GET /v1/models</code>, состояние: <code>GET /health</code>.</p>
+ </div>
+</section>
+<div id="toast"></div>
+</main>
+<script>
+const $=s=>document.querySelector(s);let S=null;
+const api=async(m,u,b)=>{const r=await fetch(u,{method:m,headers:b?{'Content-Type':'application/json'}:{},body:b?JSON.stringify(b):undefined});if(!r.ok){let t='';try{t=(await r.json()).detail}catch(e){t=r.statusText}throw new Error(t)}return r.headers.get('content-type')?.includes('json')?r.json():r};
+function toast(m,bad){const t=$('#toast');t.textContent=m;t.style.background=bad?'var(--bad)':'var(--fg)';t.style.color=bad?'#fff':'var(--bg)';t.classList.add('show');setTimeout(()=>t.classList.remove('show'),2500)}
+document.querySelectorAll('nav.tabs button').forEach(b=>b.onclick=()=>{document.querySelectorAll('nav.tabs button').forEach(x=>x.classList.toggle('on',x===b));document.querySelectorAll('section').forEach(s=>s.classList.toggle('on',s.id===b.dataset.t));location.hash=b.dataset.t});
+if(location.hash){const b=document.querySelector(`nav.tabs button[data-t="${location.hash.slice(1)}"]`);if(b)b.click()}
+function fill(sel,opts,val,keep){sel.innerHTML=(keep?'<option value="">по умолчанию</option>':'')+opts.map(o=>`<option value="${o.v}">${o.t}</option>`).join('');if(val!==undefined)sel.value=val}
+function enabledModels(){return S.models.filter(m=>m.enabled)}
+function voicesOf(id){const m=S.models.find(x=>x.id===id);return m?m.voices.filter(v=>v.enabled).map(v=>v.id):[]}
+async function load(){S=await api('GET','/admin/api/state');const d=S.settings.defaults,t=S.settings.text;
+ $('#envtag').textContent=S.app_env!=='prod'?`стенд ${S.app_env}`:'';
+ fill($('#d_model'),enabledModels().map(m=>({v:m.id,t:m.title})),d.model);
+ fill($('#d_voice'),voicesOf(d.model).map(v=>({v,t:v})),d.voice);$('#d_sr').value=d.sample_rate;$('#d_rate').value=d.rate;$('#d_pitch').value=d.pitch;$('#d_int').value=d.intensity;$('#d_yo').checked=!!d.put_yo;
+ $('#t_md').checked=!!t.strip_markdown;$('#t_num').checked=!!t.normalize_numbers;$('#t_lat').checked=!!t.normalize_latin;$('#t_stress').checked=!!t.put_stress;$('#t_min').value=t.min_fragment_chars;
+ fill($('#s_model'),enabledModels().map(m=>({v:m.id,t:m.title})),'',true);fill($('#s_voice'),[],'',true);
+ drawVoices();drawDict(S.settings.dictionary);drawKeys(S.settings.api_keys);
+ $('#stats').textContent=`запросов ${S.stats.requests}, фрагментов ${S.stats.fragments}, синтезировано ${S.stats.audio_s.toFixed(0)} с звука за ${S.stats.synth_s.toFixed(1)} с`;
+ $('#api_curl').textContent=`curl -s ${location.origin}/v1/audio/speech \\\n  -H "Authorization: Bearer <ключ>" -H "Content-Type: application/json" \\\n  -d '{"model":"tts-1","input":"Привет! Это проверка.","voice":"${d.voice}","response_format":"wav"}' -o out.wav`;}
+$('#d_model').onchange=()=>fill($('#d_voice'),voicesOf($('#d_model').value).map(v=>({v,t:v})));
+$('#s_model').onchange=()=>fill($('#s_voice'),voicesOf($('#s_model').value).map(v=>({v,t:v})),'',true);
+$('#save_defaults').onclick=async()=>{try{await api('PUT','/admin/api/defaults',{values:{model:$('#d_model').value,voice:$('#d_voice').value,sample_rate:+$('#d_sr').value,rate:$('#d_rate').value,pitch:$('#d_pitch').value,intensity:+$('#d_int').value,put_yo:$('#d_yo').checked}});toast('Сохранено');load()}catch(e){toast(e.message,1)}};
+$('#save_text').onclick=async()=>{try{await api('PUT','/admin/api/text',{values:{strip_markdown:$('#t_md').checked,normalize_numbers:$('#t_num').checked,normalize_latin:$('#t_lat').checked,put_stress:$('#t_stress').checked,min_fragment_chars:+$('#t_min').value}});toast('Сохранено')}catch(e){toast(e.message,1)}};
+const player=new Audio();let playing=null;
+player.onended=player.onerror=()=>{if(playing){playing.classList.remove('on');playing=null}};
+function stopPlayback(){player.pause();if(playing){playing.classList.remove('on');playing=null}}
+async function playVoice(b){if(playing===b){stopPlayback();return}stopPlayback();b.classList.add('busy');
+ try{const r=await api('POST','/admin/api/speak',{text:$('#v_text').value,model:b.dataset.m,voice:b.dataset.v});const url=URL.createObjectURL(await r.blob());
+  stopPlayback();player.src=url;await player.play();playing=b;b.classList.add('on')}catch(e){toast(e.message,1)}b.classList.remove('busy')}
+function voiceGroup(m,title,vs){if(!vs.length)return'';return`<h3 class="mut" style="margin:10px 0 4px;font-size:13px">${title}</h3><div class="vgrid">`+vs.map(v=>`<div class="voice ${v.enabled?'':'off'}">
+ <button class="play" data-m="${m.id}" data-v="${v.id}" title="Прослушать">▶</button><span class="nm" title="${m.id===S.settings.defaults.model&&v.id===S.settings.defaults.voice?'голос по умолчанию':''}">${m.id===S.settings.defaults.model&&v.id===S.settings.defaults.voice?'★ ':''}${v.id}</span>
+ <input type="checkbox" data-vm="${m.id}" data-vv="${v.id}" ${v.enabled?'checked':''} title="Включён"></div>`).join('')+'</div>'}
+function drawVoices(){const d=S.settings.defaults;let h='';for(const m of S.models){
+ h+=`<div class="card mcard"><h2>${m.title} <span class="tag ${m.commercial?'':'warn'}">${m.license}</span> <span class="tag">${m.builtin_stress?'ударения встроены':'ударения silero-stress'}</span>${m.intonation?'<span class="tag">интонация, *ударение</span>':''}
+  <span style="flex:1"></span><span class="mut" style="font-size:13px">${m.enabled?(m.loaded?'в памяти':m.downloaded?'включена, не загружена':'включена, не скачана'):'выключена'}</span>
+  <button class="btn sec" data-toggle="${m.id}" data-on="${m.enabled?0:1}">${m.enabled?'Выключить':'Включить'}</button>${m.enabled&&!m.loaded?`<button class="btn sec" data-load="${m.id}">Загрузить</button>`:''}</h2>
+  <p class="mut notes">${m.notes}</p>`;
+ if(m.enabled&&m.loaded){const vs=m.voices;h+=voiceGroup(m,'Женские',vs.filter(v=>v.gender==='female'))+voiceGroup(m,'Мужские',vs.filter(v=>v.gender==='male'))+voiceGroup(m,'Пол не определён',vs.filter(v=>!v.gender))}
+ h+='</div>'}
+ $('#voices_list').innerHTML=h;const L=$('#voices_list');
+ L.querySelectorAll('button.play').forEach(b=>b.onclick=()=>playVoice(b));
+ L.querySelectorAll('input[data-vm]').forEach(c=>c.onchange=async()=>{try{await api('PUT',`/admin/api/models/${c.dataset.vm}/voices/${c.dataset.vv}`,{enabled:c.checked});c.closest('.voice').classList.toggle('off',!c.checked)}catch(e){toast(e.message,1);c.checked=!c.checked}});
+ L.querySelectorAll('[data-toggle]').forEach(b=>b.onclick=async()=>{const on=b.dataset.on==='1';const m=S.models.find(x=>x.id===b.dataset.toggle);if(on&&!m.commercial&&!confirm(`Модель ${m.title} — ${m.license}, некоммерческая. Включить?`))return;b.disabled=true;try{await api('PUT',`/admin/api/models/${b.dataset.toggle}`,{enabled:on});if(on){toast('Загружаю, при первом разе скачивание…');await api('POST',`/admin/api/models/${b.dataset.toggle}/load`)}toast(on?'Включена':'Выключена');load()}catch(e){toast(e.message,1);load()}});
+ L.querySelectorAll('[data-load]').forEach(b=>b.onclick=async()=>{b.disabled=true;toast('Загружаю, при первом разе скачивание…');try{await api('POST',`/admin/api/models/${b.dataset.load}/load`);toast('Загружена');load()}catch(e){toast(e.message,1);b.disabled=false}})}
+let D={};function drawDict(d){D={...d};const rows=Object.entries(D).sort();$('#dict_rows').innerHTML=rows.map(([k,v])=>`<tr><td>${k}</td><td><input type="text" data-k="${k}" value="${v.replace(/"/g,'&quot;')}"></td><td style="width:1%"><button class="btn danger" data-del="${k}">✕</button></td></tr>`).join('')||'<tr><td colspan="3" class="mut">пусто</td></tr>';
+ $('#dict_rows').querySelectorAll('input').forEach(i=>i.oninput=()=>D[i.dataset.k]=i.value);$('#dict_rows').querySelectorAll('button').forEach(b=>b.onclick=()=>{delete D[b.dataset.del];drawDict(D)})}
+$('#dict_add').onclick=()=>{const k=$('#dict_k').value.trim().toLowerCase(),v=$('#dict_v').value.trim();if(!k||!v)return;D[k]=v;$('#dict_k').value='';$('#dict_v').value='';drawDict(D)};
+$('#dict_save').onclick=async()=>{try{await api('PUT','/admin/api/dictionary',{values:D});toast('Словарь сохранён')}catch(e){toast(e.message,1)}};
+function sParams(){return{text:$('#s_text').value,model:$('#s_model').value||null,voice:$('#s_voice').value||null,sample_rate:+$('#s_sr').value||null,rate:$('#s_rate').value||null,pitch:$('#s_pitch').value||null}}
+$('#s_prepare').onclick=async()=>{try{const r=await api('POST','/admin/api/prepare',sParams());$('#s_prepared').style.display='';$('#s_prepared').textContent=r.fragments.map((f,i)=>`${i+1}. ${f.prepared}`).join('\n');$('#s_info').textContent=`${r.model} / ${r.voice}, фрагментов: ${r.fragments.length}`}catch(e){toast(e.message,1)}};
+$('#s_speak').onclick=async()=>{const b=$('#s_speak');b.disabled=true;const t0=performance.now();try{stopPlayback();const r=await api('POST','/admin/api/speak',sParams());const a=$('#s_audio');a.src=URL.createObjectURL(await r.blob());a.style.display='';a.play();$('#s_info').textContent=`фрагментов: ${r.headers.get('X-Fragments')}, ${((performance.now()-t0)/1000).toFixed(2)} с`}catch(e){toast(e.message,1)}b.disabled=false};
+function drawKeys(keys){$('#keys_note').textContent=S.env_token?'Токен AUTH_TOKEN из окружения тоже действует. Ключи ниже — дополнительные, их можно отзывать по одному.':'AUTH_TOKEN в окружении не задан: пока ключей нет, API открыт для всех, кто видит порт.';
+ $('#keys_rows').innerHTML=keys.map(k=>`<tr><td>${k.name}</td><td><code>${k.key}</code></td><td class="mut">${k.created.slice(0,16).replace('T',' ')}</td><td style="width:1%"><button class="btn danger" data-key="${k.id}">Отозвать</button></td></tr>`).join('')||'<tr><td colspan="4" class="mut">ключей нет</td></tr>';
+ $('#keys_rows').querySelectorAll('button').forEach(b=>b.onclick=async()=>{if(!confirm('Отозвать ключ?'))return;try{await api('DELETE',`/admin/api/keys/${b.dataset.key}`);load()}catch(e){toast(e.message,1)}})}
+$('#key_add').onclick=async()=>{try{const k=await api('POST','/admin/api/keys',{name:$('#key_name').value});$('#key_new').style.display='';$('#key_new').textContent=`Ключ «${k.name}» — скопируйте, он показывается один раз:\n${k.key}`;$('#key_name').value='';load()}catch(e){toast(e.message,1)}};
+load().catch(e=>toast(e.message,1));
+</script>
+</body></html>

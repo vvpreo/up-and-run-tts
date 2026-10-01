@@ -1,0 +1,51 @@
+# up-and-run-tts — русский TTS на Silero (CPU), OpenAI-совместимый API и админка.
+#   docker compose up -d --build
+#   docker compose logs -f
+# Веса и настройки живут в томе up-and-run-tts-data (/app/data): переживают
+# пересборку и перезапуск. Порт публикуется на loopback (SSH-туннель) и на
+# шлюз docker-моста (для reverse-proxy в соседнем контейнере), наружу не торчит.
+# Секреты и стенд — в файле .env рядом (см. .env.example), в git он не попадает.
+name: up-and-run-tts
+
+services:
+  api:
+    build: .
+    image: up-and-run-tts
+    container_name: up-and-run-tts-api
+    ports:
+      - "127.0.0.1:9008:9008"
+      - "172.17.0.1:9008:9008"
+    environment:
+      # Стенд: prod | dev | test | uat — на непродовых стендах иконка с цветной рамкой
+      APP_ENV: ${APP_ENV:-prod}
+      # Bearer-токен для API. Пусто = действуют только ключи из админки;
+      # нет и их — API открыт для всех, кто видит порт.
+      AUTH_TOKEN: ${AUTH_TOKEN:-}
+      # Админка /admin под basic-auth (логин ADMIN_USER, по умолчанию admin).
+      # Пустой пароль = админка выключена.
+      ADMIN_USER: ${ADMIN_USER:-admin}
+      ADMIN_PASSWORD: ${ADMIN_PASSWORD:-}
+      # Модели сверх модели по умолчанию, которые грузить при старте (через запятую)
+      PRELOAD_MODELS: ""
+      # Потоки torch на синтез: больше — быстрее одна фраза, меньше — ровнее под нагрузкой
+      TORCH_THREADS: "4"
+      # Лимиты: длина текста за запрос и число одновременных синтезов (сверх — 429)
+      MAX_INPUT_CHARS: "20000"
+      MAX_PENDING_REQUESTS: "8"
+      # CORS: origin'ы через запятую, '*' = все, пусто = выключен
+      CORS_ORIGINS: ""
+      ENABLE_DOCS: "true"
+      LOG_LEVEL: INFO
+    volumes:
+      - up-and-run-tts-data:/app/data
+    restart: unless-stopped
+    healthcheck:
+      test: ["CMD", "python", "-c", "import urllib.request; urllib.request.urlopen('http://localhost:9008/health')"]
+      interval: 30s
+      timeout: 10s
+      retries: 3
+      start_period: 180s
+
+volumes:
+  up-and-run-tts-data:
+    name: up-and-run-tts-data

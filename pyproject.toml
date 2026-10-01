@@ -1,0 +1,62 @@
+[project]
+name = "up-and-run-tts"
+version = "0.0.0"
+description = "Local Russian text-to-speech service (Silero, CPU-only) with an OpenAI-compatible API and an admin page"
+readme = "README.md"
+requires-python = ">=3.12"
+license = "MIT"
+
+# Runtime-зависимости образа. Нижние границы здесь, точная резолюция — в uv.lock
+# (универсальный: linux/amd64 и linux/arm64 одной резолюцией).
+dependencies = [
+    # Модели Silero — torch.package, нужен только CPU-сборка torch (индекс ниже)
+    "torch>=2.6",
+    # Расстановка ударений и «ё» для ветки v5_cis_base (MIT)
+    "silero-stress>=1.5",
+    # Числа словами (русский)
+    "num2words>=0.5.13",
+    # Кодирование аудио: wav/flac/ogg-opus/mp3 через libsndfile
+    "soundfile>=0.13.1",
+    "numpy>=2.0",
+    # HTTP-сервис
+    "fastapi>=0.115",
+    "uvicorn>=0.30",
+    "websockets>=13",
+    "pydantic>=2.9",
+    # Память в /health
+    "psutil>=6.0",
+]
+
+[dependency-groups]
+dev = [
+    "pytest>=8.0",
+    "httpx>=0.27",
+]
+# Скрипты benchmark/ на девбоксе (Silero через пакет, обратное распознавание, UTMOS)
+bench = [
+    "silero>=0.5",
+    "torchaudio>=2.6",
+    "librosa>=0.11",
+    "requests>=2.32",
+    "pyarrow>=18",
+]
+
+[tool.uv]
+package = false
+environments = [
+    "sys_platform == 'linux' and platform_machine == 'x86_64'",
+    "sys_platform == 'linux' and platform_machine == 'aarch64'",
+]
+
+# torch берём с CPU-индекса PyTorch: без CUDA-библиотек образ меньше на гигабайты
+[tool.uv.sources]
+torch = [{ index = "pytorch-cpu" }]
+torchaudio = [{ index = "pytorch-cpu" }]
+
+[[tool.uv.index]]
+name = "pytorch-cpu"
+url = "https://download.pytorch.org/whl/cpu"
+explicit = true
+
+[tool.pytest.ini_options]
+testpaths = ["tests"]

@@ -1,0 +1,196 @@
+{
+ "lead": "Один набор фраз, озвученный разными моделями. Голоса «Наташа» и «Руслан» — клоны двух студийных записей (7–8 секунд) из открытых корпусов. Слушайте интонацию и ударения; столбец справа показывает, что из записи разобрал распознаватель речи.",
+ "summary_note": "Ошибки распознавания — доля неверных символов после обратного распознавания GigaAM, без фразы с английскими терминами; это мера разборчивости, а не ударений или интонации. Время синтеза / длительность: меньше 1 — быстрее реального времени. Память — пик занятой GPU-памяти процесса. Все GPU-модели запускались на DGX Spark, Silero — на процессоре Development Box.",
+ "models": [
+  {
+   "dir": "f5-ru",
+   "name": "F5-TTS, русское дообучение (Misha24-10 и ESpeech) + ударения RUAccent",
+   "variants": [
+    {
+     "id": "v4manual-natasha",
+     "label": "v4, Наташа, ударения исправлены вручную"
+    },
+    {
+     "id": "v4-natasha",
+     "label": "v4 (зима), Наташа"
+    },
+    {
+     "id": "v4-ruslan",
+     "label": "v4 (зима), Руслан"
+    },
+    {
+     "id": "v4chunked-natasha",
+     "label": "v4, Наташа, текст по клаузам"
+    },
+    {
+     "id": "v2-natasha",
+     "label": "v2, Наташа"
+    },
+    {
+     "id": "v2-ruslan",
+     "label": "v2, Руслан"
+    },
+    {
+     "id": "espeech-natasha",
+     "label": "ESpeech RL-V2, Наташа"
+    },
+    {
+     "id": "espeech-ruslan",
+     "label": "ESpeech RL-V2, Руслан"
+    }
+   ]
+  },
+  {
+   "dir": "qwen3-1.7b",
+   "name": "Qwen3-TTS 1.7B",
+   "variants": [
+    {
+     "id": "clone-natasha",
+     "label": "клон, Наташа"
+    },
+    {
+     "id": "clone-ruslan",
+     "label": "клон, Руслан"
+    },
+    {
+     "id": "chunked-natasha",
+     "label": "клон, Наташа, текст по клаузам"
+    },
+    {
+     "id": "design-female",
+     "label": "голос по описанию (женский)"
+    },
+    {
+     "id": "preset-serena",
+     "label": "готовый голос Serena"
+    },
+    {
+     "id": "preset-ryan",
+     "label": "готовый голос Ryan"
+    }
+   ]
+  },
+  {
+   "dir": "fish-s2-pro",
+   "name": "Fish Audio S2 Pro",
+   "variants": [
+    {
+     "id": "clone-natasha",
+     "label": "клон, Наташа"
+    },
+    {
+     "id": "clone-ruslan",
+     "label": "клон, Руслан"
+    }
+   ]
+  },
+  {
+   "dir": "voxcpm2",
+   "name": "VoxCPM2 (2B, 48 кГц)",
+   "variants": [
+    {
+     "id": "clone-natasha",
+     "label": "клон, Наташа"
+    },
+    {
+     "id": "clone-ruslan",
+     "label": "клон, Руслан"
+    },
+    {
+     "id": "design-female",
+     "label": "голос по описанию (женский)"
+    }
+   ]
+  },
+  {
+   "dir": "moss-realtime",
+   "name": "MOSS-TTS-Realtime 1.7B (нативный потоковый ввод)",
+   "variants": [
+    {
+     "id": "full-natasha",
+     "label": "Наташа, текст целиком"
+    },
+    {
+     "id": "stream-natasha",
+     "label": "Наташа, текст по 4 символа"
+    },
+    {
+     "id": "full-ruslan",
+     "label": "Руслан, текст целиком"
+    },
+    {
+     "id": "stream-ruslan",
+     "label": "Руслан, текст по 4 символа"
+    }
+   ]
+  },
+  {
+   "dir": "cosyvoice3",
+   "name": "Fun-CosyVoice 3 0.5B (нативный потоковый ввод)",
+   "variants": [
+    {
+     "id": "full-natasha",
+     "label": "Наташа, текст целиком"
+    },
+    {
+     "id": "stream-natasha",
+     "label": "Наташа, текст по 4 символа"
+    },
+    {
+     "id": "full-ruslan",
+     "label": "Руслан, текст целиком"
+    },
+    {
+     "id": "stream-ruslan",
+     "label": "Руслан, текст по 4 символа"
+    }
+   ]
+  },
+  {
+   "dir": "omnivoice",
+   "name": "OmniVoice",
+   "variants": [
+    {
+     "id": "clone-natasha",
+     "label": "клон, Наташа"
+    },
+    {
+     "id": "clone-ruslan",
+     "label": "клон, Руслан"
+    }
+   ]
+  },
+  {
+   "dir": "chatterbox-v3",
+   "name": "Chatterbox Multilingual V3",
+   "variants": [
+    {
+     "id": "clone-natasha",
+     "label": "клон, Наташа"
+    },
+    {
+     "id": "clone-ruslan",
+     "label": "клон, Руслан"
+    }
+   ]
+  },
+  {
+   "dir": "silero-v5",
+   "name": "Silero v5_5_ru (процессор, точка отсчёта)",
+   "variants": [
+    {
+     "id": "xenia",
+     "label": "xenia"
+    },
+    {
+     "id": "kseniya",
+     "label": "kseniya"
+    },
+    {
+     "id": "eugene",
+     "label": "eugene"
+    }
+   ]
+  }
+ ]
+}

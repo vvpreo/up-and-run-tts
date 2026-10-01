@@ -1,0 +1,10 @@
+.git
+.venv
+.tmp
+benchmark
+docs
+tests
+__pycache__
+*.pyc
+src/static/icons/generated
+latest_silero_models.yml

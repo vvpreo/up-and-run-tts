@@ -1,0 +1,23 @@
+# Base image for TTS quality benchmarks on DGX Spark (GB10 / sm_121 / aarch64 / CUDA 13).
+# torch/torchaudio pins are the combination validated on GB10 by the community
+# (mARTin-B78/dgx-spark-faster-qwen3-tts). Per-model dependencies live in venvs
+# under /proj/.venvs (created with --system-site-packages), not in this image.
+FROM nvidia/cuda:13.0.2-base-ubuntu24.04
+
+ENV DEBIAN_FRONTEND=noninteractive PIP_BREAK_SYSTEM_PACKAGES=1 PIP_NO_CACHE_DIR=1
+RUN apt-get update && \
+    apt-get install -y --no-install-recommends python3.12 python3.12-venv python3-pip python3.12-dev \
+        build-essential cmake git curl ffmpeg sox libsox-dev libsndfile1 espeak-ng && \
+    rm -rf /var/lib/apt/lists/* && ln -sf /usr/bin/python3.12 /usr/local/bin/python
+
+RUN pip install torch==2.12.1 torchvision==0.27.1 torchaudio==2.11.0 \
+        --index-url https://download.pytorch.org/whl/cu130 && \
+    pip install soundfile numpy "huggingface-hub[cli]" hf_transfer psutil
+
+# Keep pip from silently replacing the validated torch build inside model venvs.
+RUN printf 'torch==2.12.1\ntorchvision==0.27.1\ntorchaudio==2.11.0\n' > /etc/pip-constraints.txt
+ENV PIP_CONSTRAINT=/etc/pip-constraints.txt
+
+# nvidia/cuda entrypoint prints a licence banner to stdout on every run.
+ENTRYPOINT []
+WORKDIR /proj

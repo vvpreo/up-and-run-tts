@@ -1,0 +1,90 @@
+# Проверка каждого пуша и PR: образ должен собраться на обеих архитектурах,
+# подняться, скачать модель и пройти тесты. arm64 — на нативном раннере.
+name: CI
+
+on:
+  push:
+    branches: [main]
+  pull_request:
+  workflow_dispatch:
+
+concurrency:
+  group: ci-${{ github.ref }}
+  cancel-in-progress: true
+
+jobs:
+  build-and-test:
+    name: cpu-${{ matrix.arch }}
+    runs-on: ${{ matrix.runner }}
+    timeout-minutes: 40
+    permissions:
+      contents: read
+    strategy:
+      fail-fast: false
+      matrix:
+        include:
+          - arch: amd64
+            runner: ubuntu-latest
+          - arch: arm64
+            runner: ubuntu-24.04-arm
+    steps:
+      - uses: actions/checkout@v4
+
+      - uses: docker/setup-buildx-action@v3
+
+      # Веса Silero (~90 МБ) качаются при первом старте; кэш избавляет от
+      # скачивания на каждом прогоне.
+      - name: Cache model weights
+        uses: actions/cache@v4
+        with:
+          path: .ci-data
+          key: silero-${{ matrix.arch }}-v5_cis_base-v1
+
+      - name: Build image
+        uses: docker/build-push-action@v6
+        with:
+          context: .
+          platforms: linux/${{ matrix.arch }}
+          load: true
+          tags: up-and-run-tts:ci
+          build-args: |
+            VERSION=ci-${{ github.sha }}
+            REVISION=${{ github.sha }}
+          cache-from: type=gha,scope=cpu-${{ matrix.arch }}
+          cache-to: type=gha,scope=cpu-${{ matrix.arch }},mode=max
+
+      - name: Start service
+        run: |
+          # Контейнер работает от uid 1000, каталог создаёт runner
+          mkdir -p .ci-data && chmod -R 777 .ci-data
+          docker network create ci
+          docker run -d --name tts --network ci -p 9008:9008 \
+            -v "$PWD/.ci-data:/app/data" \
+            -e AUTH_TOKEN=ci-test-token -e ADMIN_PASSWORD=ci-admin \
+            up-and-run-tts:ci
+
+      - name: Wait for model_loaded
+        run: |
+          for i in $(seq 1 60); do
+            if curl -sf http://localhost:9008/health | grep -q '"model_loaded": *true'; then
+              echo "ready after ${i}0s"; exit 0
+            fi
+            sleep 10
+          done
+          echo "service did not become ready" >&2
+          docker logs tts >&2
+          exit 1
+
+      # Тесты идут в чистом контейнере python: юнит-тестам конвейера нужны только
+      # num2words, интеграционные ходят в сервис по HTTP.
+      - name: Run tests
+        run: |
+          docker run --rm --network ci -v "$PWD:/workspace" -w /workspace \
+            -e TTS_URL=http://tts:9008 -e TTS_TOKEN=ci-test-token \
+            -e TTS_ADMIN_USER=admin -e TTS_ADMIN_PASSWORD=ci-admin \
+            python:3.12-slim-bookworm sh -c \
+            "pip install -q pytest httpx soundfile numpy num2words && pytest tests/ -v"
+
+      - name: Service logs on failure
+        if: failure()
+        run: docker logs tts

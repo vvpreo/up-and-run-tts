@@ -60,3 +60,5 @@ explicit = true
 
 [tool.pytest.ini_options]
 testpaths = ["tests"]
+# `pytest` (не `python -m pytest`) не кладёт корень проекта в sys.path сам
+pythonpath = ["."]
